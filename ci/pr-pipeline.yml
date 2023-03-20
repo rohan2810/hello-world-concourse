@@ -1,0 +1,60 @@
+---
+resource_types:
+
+  - name: pull-request
+    type: docker-image
+    source:
+      repository: teliaoss/github-pr-resource
+
+resources:
+  - name: hello-world-concourse
+    type: pull-request
+    check_every: 10s
+    source:
+      repository: rohan2810/hello-world-concourse
+      access_token: ((github-access-token))
+
+
+
+jobs:
+  - name: compile-run-unittest
+    plan:
+      - get: hello-world-concourse
+        trigger: true
+        version: every
+      - put: hello-world-concourse
+        params:
+          path: hello-world-concourse
+          status: pending
+      - task: build
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: maven
+              tag: 3.6.3-jdk-11
+          inputs:
+            - name: hello-world-concourse
+          outputs:
+            - name: build_out
+          params:
+            branch: master
+          run:
+            path: bash
+            args:
+              - -exec
+              - |
+                mvn clean install test
+    on_success:
+      do:
+        - put: hello-world-concourse
+          params:
+            path: hello-world-concourse
+            status: success
+    on_failure:
+      do:
+        - put: hello-world-concourse
+          params:
+            path: hello-world-concourse
+            status: failure
