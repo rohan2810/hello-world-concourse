@@ -45,7 +45,7 @@ jobs:
             args:
               - -exec
               - |
-                mvn clean install test
+                mvn -f hello-world-concourse/pom.xml clean install test
     on_success:
       do:
         - put: hello-world-concourse
